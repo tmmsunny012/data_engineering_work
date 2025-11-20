@@ -1,0 +1,29 @@
+# DBT Profiles Configuration
+# This tells DBT how to connect to your database
+
+business_performance:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: localhost  # Change to 'postgres' if running DBT in Docker
+      port: 5432
+      user: dataeng
+      password: dataeng123
+      dbname: business_db
+      schema: staging  # Default schema for models
+      threads: 4  # Number of parallel model builds
+      keepalives_idle: 0
+      connect_timeout: 10
+
+    prod:
+      type: postgres
+      host: localhost
+      port: 5432
+      user: dataeng
+      password: dataeng123
+      dbname: business_db
+      schema: mart  # Production uses mart schema
+      threads: 8
+      keepalives_idle: 0
+      connect_timeout: 10

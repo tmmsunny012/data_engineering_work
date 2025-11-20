@@ -1,0 +1,49 @@
+# DBT Project Configuration
+
+name: 'business_performance'
+version: '1.0.0'
+config-version: 2
+
+# This is the profile name from profiles.yml
+profile: 'business_performance'
+
+# Directories
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Model configurations
+models:
+  business_performance:
+    # Staging models - materialize as views (fast, always fresh)
+    staging:
+      +materialized: view
+      +schema: staging
+
+    # Intermediate models - materialize as views
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+
+    # Mart models - materialize as tables (optimized for queries)
+    mart:
+      +materialized: table
+      +schema: mart
+
+# Test configurations
+tests:
+  +store_failures: true  # Store failed test results for analysis
+  +schema: test_results
+
+# Documentation
+vars:
+  # Start date for weather data collection
+  weather_start_date: '2023-01-01'
+  weather_end_date: '2024-12-31'

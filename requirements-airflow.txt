@@ -1,0 +1,11 @@
+# Airflow-specific requirements
+# This file is used by the Airflow Docker container
+
+# Database driver for Airflow (must use psycopg2 for compatibility)
+psycopg2-binary==2.9.9
+
+# API Calls
+requests>=2.31.0
+
+# Environment Management
+python-dotenv>=1.0.0

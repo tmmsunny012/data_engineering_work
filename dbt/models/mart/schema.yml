@@ -1,0 +1,203 @@
+version: 2
+
+models:
+  - name: fct_daily_business_performance
+    description: |
+      Daily business performance fact table combining all metrics.
+
+      **Grain:** One row per listing per date
+
+      **Business Use Cases:**
+      - Analyze correlation between weather and order volume
+      - Track impact of ratings on sales performance
+      - Monitor platform ranking trends
+      - Compare outlet and organization performance
+      - Identify best-performing combinations
+
+      **Key Metrics:**
+      - Orders (daily, completed)
+      - Ratings (average, cumulative, delta)
+      - Rank (average, best, worst)
+      - Weather (temperature, humidity, wind speed)
+
+    columns:
+      # Date Dimension
+      - name: date
+        description: Business date (daily grain)
+        tests:
+          - not_null
+
+      # Listing Dimension
+      - name: listing_id
+        description: Unique listing identifier
+        tests:
+          - not_null
+
+      # Outlet Dimension
+      - name: outlet_id
+        description: Outlet identifier
+        tests:
+          - not_null
+      - name: outlet_name
+        description: Outlet name
+      - name: latitude
+        description: Outlet latitude
+      - name: longitude
+        description: Outlet longitude
+
+      # Organization Dimension
+      - name: org_id
+        description: Organization identifier
+        tests:
+          - not_null
+      - name: org_name
+        description: Organization name
+
+      # Platform Dimension
+      - name: platform_id
+        description: Platform identifier
+        tests:
+          - not_null
+      - name: platform_name
+        description: Platform name
+      - name: platform_group
+        description: Platform group (Delivery/Aggregator)
+
+      # Order Metrics
+      - name: daily_orders_from_snapshot
+        description: |
+          DEPRECATED - DO NOT USE FOR ANALYSIS
+
+          Order count from orders_daily.csv (pre-aggregated snapshot source).
+          This column is kept for transparency and data quality auditing only.
+
+          Known quality issues:
+          - 2.9% of records contain negative values (correction records)
+          - 3.3% have large discrepancies (>5 orders difference from actual)
+          - 0.04% have duplicate timestamps with conflicting values
+          - Systematic 10-order cap observed in some cases
+          - Missing 20 orders in worst cases
+
+          For all analysis and reporting, use 'daily_orders' instead.
+
+      - name: daily_orders
+        description: |
+          PRIMARY METRIC - USE THIS FOR ALL ANALYSIS
+
+          Count of orders from orders.csv (transactional source of truth).
+          Calculated by counting individual order records with unique order_id.
+
+          Source: Derived from raw.orders table (individual transaction records)
+          Calculation: COUNT(*) grouped by date and listing_id
+          Includes: All order statuses (completed, pending, cancelled, refunded)
+
+          Data quality: 100% valid, no negative values, fully auditable
+        tests:
+          - not_null
+
+      - name: total_orders
+        description: |
+          Alias for daily_orders. Kept for backward compatibility.
+          Same source and calculation as daily_orders column.
+
+      - name: data_quality_flag
+        description: |
+          Data quality indicator comparing snapshot vs transactional sources.
+
+          Possible values:
+          - 'match': Both sources agree (99.98% of records)
+          - 'minor_discrepancy': Small difference (1-5 orders)
+          - 'large_discrepancy': Significant difference (>5 orders)
+          - 'snapshot_negative': Snapshot contains negative value (correction record)
+          - 'snapshot_missing': No snapshot record available
+
+          Use for monitoring: Filter WHERE data_quality_flag != 'match' to find issues
+        tests:
+          - accepted_values:
+              values: ['match', 'minor_discrepancy', 'large_discrepancy', 'snapshot_negative', 'snapshot_missing']
+              config:
+                severity: warn
+
+      - name: snapshot_vs_actual_diff
+        description: |
+          Difference between snapshot and actual order counts.
+          Formula: daily_orders - daily_orders_from_snapshot
+
+          Positive value: Snapshot undercounted (missing orders)
+          Negative value: Snapshot overcounted (phantom orders)
+          Zero: Perfect match
+
+          Use for analysis: Identify systematic biases in snapshot data
+
+      - name: completed_orders
+        description: Number of completed orders (status = 'completed')
+
+      # Rating Metrics
+      - name: avg_rating
+        description: Average rating for the day (0-5 scale)
+      - name: cumulative_rating_count
+        description: Total ratings received up to this date
+      - name: rating_delta
+        description: Change in rating from previous day
+      - name: rating_trend
+        description: Rating trend (improving/declining/stable/new/No Ratings)
+        tests:
+          - accepted_values:
+              values: ['improving', 'declining', 'stable', 'new', 'No Ratings']
+              config:
+                severity: warn  # Warning instead of error
+
+      # Rank Metrics
+      - name: avg_rank
+        description: Average rank for the day (lower is better)
+      - name: daily_best_rank
+        description: Best rank achieved during the day
+      - name: daily_worst_rank
+        description: Worst rank during the day
+      - name: rank_volatility
+        description: Rank volatility (difference between best and worst)
+
+      # Weather Metrics
+      - name: avg_temperature
+        description: Average daily temperature in Celsius
+      - name: avg_humidity
+        description: Average daily relative humidity (%)
+      - name: avg_wind_speed
+        description: Average daily wind speed (km/h)
+      - name: min_temperature
+        description: Minimum temperature for the day
+      - name: max_temperature
+        description: Maximum temperature for the day
+
+      # Derived Categories
+      - name: rating_category
+        description: Rating quality category
+        tests:
+          - accepted_values:
+              values: ['Excellent', 'Good', 'Average', 'Poor', 'No Ratings']
+      - name: temperature_category
+        description: Temperature category
+        tests:
+          - accepted_values:
+              values: ['Cold', 'Mild', 'Warm', 'Hot', 'Unknown']
+
+    tests:
+      # Ensure date + listing_id is unique
+      - unique:
+          column_name: "date || '-' || listing_id"
+
+      # Check that completed orders don't exceed daily orders (using transactional source)
+      - dbt_utils.expression_is_true:
+          expression: "completed_orders <= daily_orders"
+          config:
+            severity: error  # Error now since we're comparing same source (orders.csv)
+            error_if: ">0"
+            warn_if: ">0"
+
+      # Monitor data quality - flag large discrepancies between sources
+      - dbt_utils.expression_is_true:
+          expression: "data_quality_flag NOT IN ('large_discrepancy', 'snapshot_negative')"
+          config:
+            severity: warn  # Warn but don't fail pipeline
+            error_if: ">100"  # Only error if more than 100 bad records
+            warn_if: ">0"

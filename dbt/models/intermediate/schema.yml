@@ -1,0 +1,74 @@
+version: 2
+
+models:
+  - name: int_orders_enriched
+    description: Orders joined with all dimensional data (listing, outlet, org, platform)
+    columns:
+      - name: order_id
+        description: Unique order identifier
+        tests:
+          - unique
+          - not_null
+      - name: listing_id
+        description: Listing identifier
+        tests:
+          - not_null
+      - name: outlet_id
+        description: Outlet identifier
+        tests:
+          - not_null
+      - name: org_id
+        description: Organization identifier
+        tests:
+          - not_null
+      - name: platform_id
+        description: Platform identifier
+        tests:
+          - not_null
+
+  - name: int_ratings_metrics
+    description: Rating metrics with cumulative counts and deltas
+    columns:
+      - name: date
+        description: Rating date
+        tests:
+          - not_null
+      - name: listing_id
+        description: Listing identifier
+        tests:
+          - not_null
+      - name: cumulative_rating_count
+        description: Total ratings received up to this date
+        tests:
+          - not_null
+      - name: rating_delta
+        description: Change in rating from previous day
+      - name: rating_trend
+        description: Rating trend indicator
+        tests:
+          - accepted_values:
+              values: ['improving', 'declining', 'stable', 'new']
+    tests:
+      - unique:
+          column_name: "date || '-' || listing_id"
+
+  - name: int_rank_daily_avg
+    description: Daily average rank per listing
+    columns:
+      - name: date
+        description: Rank date
+        tests:
+          - not_null
+      - name: listing_id
+        description: Listing identifier
+        tests:
+          - not_null
+      - name: avg_rank
+        description: Average rank for the day
+        tests:
+          - not_null
+      - name: rank_volatility
+        description: Rank volatility (range between best and worst)
+    tests:
+      - unique:
+          column_name: "date || '-' || listing_id"

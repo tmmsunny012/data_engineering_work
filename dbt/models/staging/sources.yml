@@ -1,0 +1,127 @@
+# DBT Sources Configuration
+# This defines where our raw data lives
+
+version: 2
+
+sources:
+  - name: raw_data
+    description: Raw data loaded from CSV files and weather API
+    database: business_db
+    schema: raw
+
+    tables:
+      - name: listing
+        description: Listings of outlets on delivery platforms
+        columns:
+          - name: id
+            description: Unique listing identifier
+            tests:
+              - not_null
+          - name: outlet_id
+            description: Reference to outlet
+          - name: platform_id
+            description: Reference to platform
+          - name: timestamp
+            description: When listing was created/updated
+
+      - name: orders
+        description: Individual order transactions
+        columns:
+          - name: order_id
+            description: Unique order identifier
+          - name: listing_id
+            description: Reference to listing
+          - name: placed_at
+            description: Order placement timestamp
+          - name: status
+            description: Order status (completed, pending, refunded)
+
+      - name: orders_daily
+        description: Pre-aggregated daily order counts
+        columns:
+          - name: date
+            description: Order date
+          - name: listing_id
+            description: Reference to listing
+          - name: orders
+            description: Number of orders
+          - name: timestamp
+            description: When aggregation was created
+
+      - name: org
+        description: Organizations owning outlets
+        columns:
+          - name: id
+            description: Unique organization identifier
+          - name: name
+            description: Organization name
+          - name: timestamp
+            description: When record was created
+
+      - name: outlet
+        description: Physical outlet locations
+        columns:
+          - name: id
+            description: Unique outlet identifier
+          - name: org_id
+            description: Reference to organization
+          - name: name
+            description: Outlet name
+          - name: latitude
+            description: Latitude for weather lookup
+          - name: longitude
+            description: Longitude for weather lookup
+          - name: timestamp
+            description: When outlet was created
+
+      - name: platform
+        description: Delivery platforms
+        columns:
+          - name: id
+            description: Unique platform identifier
+          - name: group
+            description: Platform group (Delivery/Aggregator)
+          - name: name
+            description: Platform name
+          - name: country
+            description: Country code
+
+      - name: rank
+        description: Listing rankings throughout the day
+        columns:
+          - name: listing_id
+            description: Reference to listing
+          - name: date
+            description: Rank date
+          - name: timestamp
+            description: When rank was measured
+          - name: is_online
+            description: Whether listing was online
+          - name: rank
+            description: Rank value (lower is better)
+
+      - name: ratings_agg
+        description: Daily aggregated ratings
+        columns:
+          - name: date
+            description: Rating date
+          - name: listing_id
+            description: Reference to listing
+          - name: cnt_ratings
+            description: Number of ratings received
+          - name: avg_rating
+            description: Average rating score
+
+      - name: weather
+        description: Hourly weather data from Open-Meteo API
+        columns:
+          - name: outlet_id
+            description: Reference to outlet
+          - name: datetime
+            description: Weather observation timestamp
+          - name: temperature_2m
+            description: Temperature at 2m height (Celsius)
+          - name: relative_humidity_2m
+            description: Relative humidity at 2m height (%)
+          - name: wind_speed_10m
+            description: Wind speed at 10m height (km/h)

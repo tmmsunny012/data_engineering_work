@@ -1,0 +1,196 @@
+version: 2
+
+models:
+  - name: stg_listing
+    description: Deduplicated listing data (one row per listing)
+    columns:
+      - name: listing_id
+        description: Unique listing identifier
+        tests:
+          - unique
+          - not_null
+      - name: outlet_id
+        description: Reference to outlet
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_outlet')
+              field: outlet_id
+      - name: platform_id
+        description: Reference to platform
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_platform')
+              field: platform_id
+
+  - name: stg_orders
+    description: Clean order transaction data
+    columns:
+      - name: order_id
+        description: Unique order identifier
+        tests:
+          - unique
+          - not_null
+      - name: listing_id
+        description: Reference to listing
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_listing')
+              field: listing_id
+      - name: order_date
+        description: Date of order
+        tests:
+          - not_null
+      - name: status
+        description: Order status
+        tests:
+          - accepted_values:
+              values: ['completed', 'pending', 'refunded', 'cancelled']
+
+  - name: stg_orders_daily
+    description: Daily aggregated order counts per listing
+    columns:
+      - name: date
+        description: Order date
+        tests:
+          - not_null
+      - name: listing_id
+        description: Reference to listing
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_listing')
+              field: listing_id
+      - name: daily_orders
+        description: Number of orders for the day
+        tests:
+          - not_null
+    tests:
+      - unique:
+          column_name: "date || '-' || listing_id"
+
+  - name: stg_outlet
+    description: Clean outlet location data
+    columns:
+      - name: outlet_id
+        description: Unique outlet identifier
+        tests:
+          - unique
+          - not_null
+      - name: org_id
+        description: Reference to organization
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_org')
+              field: org_id
+      - name: has_valid_coordinates
+        description: Flag indicating if coordinates are valid
+        tests:
+          - not_null
+
+  - name: stg_org
+    description: Clean organization data
+    columns:
+      - name: org_id
+        description: Unique organization identifier
+        tests:
+          - unique
+          - not_null
+      - name: org_name
+        description: Organization name
+        tests:
+          - not_null
+
+  - name: stg_platform
+    description: Clean platform data
+    columns:
+      - name: platform_id
+        description: Unique platform identifier
+        tests:
+          - unique
+          - not_null
+      - name: platform_name
+        description: Platform name
+        tests:
+          - not_null
+      - name: platform_group
+        description: Platform group (Delivery/Aggregator)
+        tests:
+          - accepted_values:
+              values: ['Delivery', 'Aggregator']
+
+  - name: stg_rank
+    description: Clean ranking data (multiple readings per day)
+    columns:
+      - name: listing_id
+        description: Reference to listing
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_listing')
+              field: listing_id
+      - name: date
+        description: Rank date
+        tests:
+          - not_null
+      - name: rank
+        description: Ranking position (NULL when offline - expected business behavior)
+        tests:
+          - not_null:
+              config:
+                where: "is_online = true"  # Only validate online records have ranks
+
+  - name: stg_ratings_agg
+    description: Daily aggregated ratings per listing
+    columns:
+      - name: date
+        description: Rating date
+        tests:
+          - not_null
+      - name: listing_id
+        description: Reference to listing
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_listing')
+              field: listing_id
+      - name: avg_rating
+        description: Average rating (0-5 scale)
+        tests:
+          - not_null
+    tests:
+      - unique:
+          column_name: "date || '-' || listing_id"
+
+  - name: stg_weather
+    description: Daily aggregated weather data per outlet
+    columns:
+      - name: outlet_id
+        description: Reference to outlet
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_outlet')
+              field: outlet_id
+      - name: date
+        description: Weather date
+        tests:
+          - not_null
+      - name: avg_temperature
+        description: Average daily temperature (Celsius)
+        tests:
+          - not_null
+      - name: avg_humidity
+        description: Average daily relative humidity (%)
+        tests:
+          - not_null
+      - name: avg_wind_speed
+        description: Average daily wind speed (km/h)
+        tests:
+          - not_null
+    tests:
+      - unique:
+          column_name: "date || '-' || outlet_id"

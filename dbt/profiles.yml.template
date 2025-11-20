@@ -1,0 +1,47 @@
+# DBT Profiles Configuration Template
+#
+# SETUP INSTRUCTIONS:
+# 1. Copy this file: cp profiles.yml.template profiles.yml
+# 2. Replace the placeholders below with your actual credentials
+# 3. NEVER commit profiles.yml to Git (it's in .gitignore)
+
+business_performance:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: localhost  # Change to 'postgres' if running DBT in Docker
+      port: 5432
+      user: YOUR_DATABASE_USER        # ← Replace with actual username
+      password: YOUR_DATABASE_PASSWORD # ← Replace with actual password
+      dbname: business_db
+      schema: staging  # Default schema for models
+      threads: 4  # Number of parallel model builds
+      keepalives_idle: 0
+      connect_timeout: 10
+
+    prod:
+      type: postgres
+      host: localhost
+      port: 5432
+      user: YOUR_DATABASE_USER        # ← Replace with actual username
+      password: YOUR_DATABASE_PASSWORD # ← Replace with actual password
+      dbname: business_db
+      schema: mart  # Production uses mart schema
+      threads: 8
+      keepalives_idle: 0
+      connect_timeout: 10
+
+# ALTERNATIVE: Use environment variables (recommended for production)
+#
+# business_performance:
+#   target: dev
+#   outputs:
+#     dev:
+#       type: postgres
+#       host: "{{ env_var('DBT_HOST') }}"
+#       user: "{{ env_var('DBT_USER') }}"
+#       password: "{{ env_var('DBT_PASSWORD') }}"
+#       dbname: "{{ env_var('DBT_DATABASE') }}"
+#       schema: staging
+#       threads: 4

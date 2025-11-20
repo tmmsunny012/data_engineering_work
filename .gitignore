@@ -1,0 +1,52 @@
+# Environment variables - CONTAINS CREDENTIALS (NEVER COMMIT)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Airflow
+airflow/logs/*
+!airflow/logs/.gitkeep
+airflow/airflow.db
+airflow/webserver_config.py
+
+# DBT
+dbt/target/              # Compiled SQL and run artifacts (auto-generated)
+dbt/dbt_packages/        # Installed packages from packages.yml (like node_modules)
+dbt/logs/                # DBT execution logs (dbt.log can be 5MB+)
+dbt/.user.yml            # User-specific DBT cloud settings
+
+# DBT - Optional (uncomment if using template approach for credentials)
+# dbt/profiles.yml       # Uncomment this if you create profiles.yml.template
+                         # Currently kept in repo for local Docker setup only
+                         # WARNING: Contains dev credentials - NOT for production repos!
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+postgres_data/
+
+# Temporary files
+*.tmp
+*.log
