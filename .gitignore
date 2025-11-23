@@ -22,10 +22,12 @@ airflow/airflow.db
 airflow/webserver_config.py
 
 # DBT
-dbt/target/              # Compiled SQL and run artifacts (auto-generated)
-dbt/dbt_packages/        # Installed packages from packages.yml (like node_modules)
+dbt/target/                   # Compiled SQL and run artifacts (auto-generated)
+dbt/dbt_packages/           # Installed packages from packages.yml (like node_modules)
+dbt/dbt_packages/dbt_utils/*  # Installed packages from packages.yml (like node_modules)
 dbt/logs/                # DBT execution logs (dbt.log can be 5MB+)
 dbt/.user.yml            # User-specific DBT cloud settings
+
 
 # DBT - Optional (uncomment if using template approach for credentials)
 # dbt/profiles.yml       # Uncomment this if you create profiles.yml.template
